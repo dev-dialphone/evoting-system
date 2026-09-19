@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<h3 class="mb-3">Users</h3>
+
+<form method="get" class="mb-3 d-flex gap-2">
+  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm w-auto"
+         placeholder="Search name, email, roll…">
+  <button class="btn btn-primary btn-sm">Search</button>
+  {% if q %}<a href="{{ url_for('admin_bp.users') }}" class="btn btn-outline-secondary btn-sm">Clear</a>{% endif %}
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr><th>Name</th><th>Email</th><th>Roll No.</th><th>Role</th><th>2FA</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email }}</td>
+        <td class="font-monospace small">{{ u.roll_number or '—' }}</td>
+        <td><span class="badge {{ 'bg-danger' if u.is_admin else 'bg-secondary' }}">{{ u.role }}</span></td>
+        <td>{% if u.totp_enabled %}<i class="bi bi-shield-lock-fill text-warning"></i>{% else %}<i class="bi bi-shield text-muted"></i>{% endif %}</td>
+        <td><span class="badge {{ 'bg-success' if u.is_active else 'bg-warning text-dark' }}">
+          {{ 'Active' if u.is_active else 'Inactive' }}
+        </span></td>
+        <td class="small text-muted">{{ u.created_at | ist }}</td>
+        <td class="d-flex gap-1">
+          <form method="post" action="{{ url_for('admin_bp.user_toggle', user_id=u.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-warning btn-sm">{{ 'Deactivate' if u.is_active else 'Activate' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_bp.user_make_admin', user_id=u.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-secondary btn-sm">{{ 'Revoke Admin' if u.is_admin else 'Make Admin' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

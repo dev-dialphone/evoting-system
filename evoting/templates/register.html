@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Register — E-Voting{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4 text-center"><i class="bi bi-person-plus-fill text-primary"></i> Create Account</h4>
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {% for field in [form.name, form.email, form.roll_number, form.password, form.confirm] %}
+          <div class="mb-3">
+            {{ field.label(class='form-label') }}
+            {{ field(class='form-control' + (' is-invalid' if field.errors else ''),
+                     placeholder=('e.g. 24TCS139' if field.name == 'roll_number' else '')) }}
+            {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            {% if field.name == 'roll_number' %}
+            <div class="form-text">Optional — required for elections with eligibility restrictions.</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {{ form.submit(class='btn btn-primary w-100') }}
+        </form>
+        <p class="text-center mt-3 mb-0 small">Already registered? <a href="{{ url_for('auth.login') }}">Login</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

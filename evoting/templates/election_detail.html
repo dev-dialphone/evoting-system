@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}{{ election.title }} — E-Voting{% endblock %}
+{% block content %}
+<a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h3>{{ election.title }}</h3>
+    {% if election.description %}<p class="text-muted">{{ election.description }}</p>{% endif %}
+    <p class="small text-muted">
+      <i class="bi bi-clock"></i>
+      {{ election.start_time | localdt }} – {{ election.end_time | localdt }}
+    </p>
+    {% if election.eligible_prefix %}
+    <p class="small text-info"><i class="bi bi-person-check-fill"></i> Eligible roll prefix: <code>{{ election.eligible_prefix }}</code></p>
+    {% endif %}
+
+    {% if already_voted %}
+      <div class="alert alert-info">You have already voted in this election.</div>
+      <a href="{{ url_for('main.results', election_id=election.id) }}" class="btn btn-primary">View Results</a>
+    {% elif not election.is_open %}
+      <div class="alert alert-warning">This election is not currently open for voting.</div>
+    {% else %}
+      <!-- Webcam capture -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold"><i class="bi bi-camera-fill"></i> Webcam Snapshot (optional)</label>
+        <div>
+          <video id="webcam" autoplay playsinline class="rounded border" style="width:240px;height:180px;background:#000;display:none"></video>
+          <canvas id="canvas" style="display:none" width="240" height="180"></canvas>
+          <img id="preview" class="rounded border" style="width:240px;height:180px;display:none;object-fit:cover" alt="snapshot preview">
+        </div>
+        <div class="mt-2 d-flex gap-2">
+          <button type="button" id="startCam" class="btn btn-outline-secondary btn-sm">Start Camera</button>
+          <button type="button" id="capture" class="btn btn-outline-primary btn-sm" style="display:none">Capture</button>
+          <button type="button" id="retake" class="btn btn-outline-warning btn-sm" style="display:none">Retake</button>
+        </div>
+      </div>
+
+      <form method="post" id="voteForm">
+        {{ form.hidden_tag() }}
+        {{ form.snapshot(id='snapshotInput', style='display:none') }}
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Select a Candidate</label>
+          <div class="row g-3">
+            {% for candidate in election.candidates %}
+            <div class="col-md-6">
+              <label class="card h-100 p-3 candidate-card border-2" style="cursor:pointer">
+                <div class="d-flex align-items-center gap-3">
+                  <input type="radio" name="candidate_id" value="{{ candidate.id }}" class="form-check-input mt-0" required>
+                  {% if candidate.photo %}
+                  <img src="{{ url_for('static', filename='uploads/' + candidate.photo) }}"
+                       class="rounded-circle" style="width:48px;height:48px;object-fit:cover" alt="">
+                  {% else %}
+                  <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                       style="width:48px;height:48px;flex-shrink:0;font-size:1.2rem">
+                    {{ candidate.name[0].upper() }}
+                  </div>
+                  {% endif %}
+                  <div>
+                    <div class="fw-semibold">{{ candidate.name }}</div>
+                    {% if candidate.description %}
+                    <div class="text-muted small">{{ candidate.description }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+          {% for e in form.candidate_id.errors %}
+            <div class="text-danger small mt-1">{{ e }}</div>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-success btn-lg">
+          <i class="bi bi-check2-circle"></i> Cast My Vote
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const startBtn = document.getElementById('startCam');
+  const captureBtn = document.getElementById('capture');
+  const retakeBtn = document.getElementById('retake');
+  const video = document.getElementById('webcam');
+  const canvas = document.getElementById('canvas');
+  const preview = document.getElementById('preview');
+  const snapInput = document.getElementById('snapshotInput');
+  let stream;
+
+  startBtn?.addEventListener('click', async () => {
+    stream = await navigator.mediaDevices.getUserMedia({video: true}).catch(() => null);
+    if (!stream) return;
+    video.srcObject = stream;
+    video.style.display = 'block';
+    startBtn.style.display = 'none';
+    captureBtn.style.display = '';
+  });
+
+  captureBtn?.addEventListener('click', () => {
+    canvas.getContext('2d').drawImage(video, 0, 0, 240, 180);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    snapInput.value = dataUrl;
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = '';
+    stream.getTracks().forEach(t => t.stop());
+  });
+
+  retakeBtn?.addEventListener('click', async () => {
+    snapInput.value = '';
+    preview.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    stream = await navigator.mediaDevices.getUserMedia({video: true}).catch(() => null);
+    if (!stream) return;
+    video.srcObject = stream;
+    video.style.display = 'block';
+    captureBtn.style.display = '';
+  });
+</script>
+{% endblock %}

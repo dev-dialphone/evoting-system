@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<h3 class="mb-4">{{ title }}</h3>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header fw-semibold"><i class="bi bi-calendar2-event me-2"></i>Election Details</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {% for field in [form.title, form.description, form.start_time, form.end_time, form.eligible_prefix] %}
+          <div class="mb-3">
+            {{ field.label(class='form-label') }}
+            {{ field(class='form-control' + (' is-invalid' if field.errors else '')) }}
+            {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            {% if field.name == 'eligible_prefix' %}
+            <div class="form-text">e.g. <code>24TCS</code> — only voters whose roll number starts with this can vote. Leave blank for all.</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {{ form.submit(class='btn btn-primary') }}
+        </form>
+      </div>
+    </div>
+
+    {% if election %}
+    <div class="d-flex gap-2">
+      <form method="post" action="{{ url_for('admin_bp.election_notify', election_id=election.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-info btn-sm"><i class="bi bi-bell-fill"></i> Notify Voters</button>
+      </form>
+      <a href="{{ url_for('admin_bp.live_dashboard', election_id=election.id) }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-graph-up-arrow"></i> Live Count
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-people-fill me-2"></i>Candidates</span>
+        {% if election %}
+        <a href="{{ url_for('admin_bp.candidate_add', election_id=election.id) }}" class="btn btn-sm btn-success">
+          <i class="bi bi-plus-circle"></i> Add Candidate
+        </a>
+        {% endif %}
+      </div>
+
+      {% if not election %}
+      <div class="card-body text-center text-muted py-4">
+        <i class="bi bi-info-circle fs-3 mb-2 d-block"></i>
+        <p class="mb-0">Save the election first, then add candidates here.</p>
+        <p class="small mt-1">Click <strong>Save Election</strong> on the left to continue.</p>
+      </div>
+      {% else %}
+      <ul class="list-group list-group-flush">
+        {% for c in election.candidates %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            {% if c.photo %}
+            <img src="{{ url_for('static', filename='uploads/' + c.photo) }}"
+                 class="rounded-circle" style="width:40px;height:40px;object-fit:cover" alt="">
+            {% else %}
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                 style="width:40px;height:40px;flex-shrink:0;font-size:1.1rem">{{ c.name[0].upper() }}</div>
+            {% endif %}
+            <div>
+              <strong>{{ c.name }}</strong>
+              <span class="badge bg-light text-dark ms-1">{{ c.vote_count }} votes</span>
+              {% if c.description %}<br><small class="text-muted">{{ c.description }}</small>{% endif %}
+            </div>
+          </div>
+          <form method="post" action="{{ url_for('admin_bp.candidate_delete', candidate_id=c.id) }}"
+            onsubmit="return confirm('Remove this candidate?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+          </form>
+        </li>
+        {% else %}
+        <li class="list-group-item text-center text-muted py-3">
+          <i class="bi bi-person-plus me-1"></i> No candidates yet — click <strong>Add Candidate</strong> above.
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

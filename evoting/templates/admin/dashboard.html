@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card text-center border-0 bg-primary text-white shadow-sm">
+      <div class="card-body">
+        <div class="display-5 fw-bold">{{ stats.users }}</div>
+        <div>Users</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center border-0 bg-success text-white shadow-sm">
+      <div class="card-body">
+        <div class="display-5 fw-bold">{{ stats.elections }}</div>
+        <div>Elections</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center border-0 bg-info text-white shadow-sm">
+      <div class="card-body">
+        <div class="display-5 fw-bold">{{ stats.votes }}</div>
+        <div>Total Votes</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h4 class="mb-0">Elections</h4>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('admin_bp.election_new') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle"></i> New Election
+    </a>
+    <a href="{{ url_for('admin_bp.users') }}" class="btn btn-outline-secondary btn-sm">Users</a>
+    <a href="{{ url_for('admin_bp.audit') }}" class="btn btn-outline-secondary btn-sm">Audit Log</a>
+    <a href="{{ url_for('admin_bp.reports') }}" class="btn btn-outline-secondary btn-sm">Reports</a>
+    <a href="{{ url_for('admin_bp.reports_pdf') }}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-file-earmark-pdf"></i> PDF
+    </a>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr><th>Title</th><th>Status</th><th>Eligible Prefix</th><th>Candidates</th><th>Votes</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for e in elections %}
+      <tr>
+        <td>{{ e.title }}</td>
+        <td>
+          {% if e.status == 'open' %}<span class="badge bg-success">Open</span>
+          {% elif e.status == 'upcoming' %}<span class="badge bg-warning text-dark">Upcoming</span>
+          {% else %}<span class="badge bg-secondary">Closed</span>{% endif %}
+        </td>
+        <td>{{ e.eligible_prefix or '<span class="text-muted">All</span>' | safe }}</td>
+        <td>{{ e.candidates | length }}</td>
+        <td>{{ e.votes | length }}</td>
+        <td class="d-flex flex-wrap gap-1">
+          <a href="{{ url_for('admin_bp.election_edit', election_id=e.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+          <a href="{{ url_for('admin_bp.live_dashboard', election_id=e.id) }}" class="btn btn-outline-info btn-sm">Live</a>
+          <a href="{{ url_for('main.results', election_id=e.id) }}" class="btn btn-outline-success btn-sm">Results</a>
+          <form method="post" action="{{ url_for('admin_bp.election_delete', election_id=e.id) }}" class="d-inline"
+            onsubmit="return confirm('Delete this election and all its votes?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted">No elections yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

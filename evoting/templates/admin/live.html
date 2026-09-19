@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Live Count — {{ election.title }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<h3 class="mb-1">
+  <i class="bi bi-graph-up-arrow text-success"></i> Live Vote Count
+</h3>
+<p class="text-muted mb-4">{{ election.title }} — auto-refreshes every 5 seconds</p>
+
+<div id="liveContainer">
+  <div class="text-muted">Loading…</div>
+</div>
+
+<p class="text-muted small mt-3">Total votes: <strong id="totalCount">—</strong></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const electionId = {{ election.id }};
+const apiUrl = `/api/election/${electionId}/live`;
+
+function render(data) {
+  document.getElementById('totalCount').textContent = data.total;
+  const container = document.getElementById('liveContainer');
+  if (!data.candidates.length) {
+    container.innerHTML = '<p class="text-muted">No candidates yet.</p>';
+    return;
+  }
+  container.innerHTML = data.candidates.map(c => {
+    const pct = data.total > 0 ? (c.votes / data.total * 100).toFixed(1) : 0;
+    return `
+      <div class="mb-3">
+        <div class="d-flex justify-content-between small mb-1">
+          <span class="fw-semibold">${c.name}</span>
+          <span>${c.votes} votes (${pct}%)</span>
+        </div>
+        <div class="progress" style="height:16px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+               style="width:${pct}%">${pct}%</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function fetchLive() {
+  try {
+    const r = await fetch(apiUrl);
+    if (r.ok) render(await r.json());
+  } catch(e) {}
+}
+
+fetchLive();
+setInterval(fetchLive, 5000);
+</script>
+{% endblock %}

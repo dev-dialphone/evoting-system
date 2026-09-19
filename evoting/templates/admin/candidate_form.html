@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Add Candidate{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_bp.election_edit', election_id=election.id) }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<h3 class="mb-4">Add Candidate to "{{ election.title }}"</h3>
+<div class="col-lg-5">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {{ form.hidden_tag() }}
+        {% for field in [form.name, form.description, form.photo] %}
+        <div class="mb-3">
+          {{ field.label(class='form-label') }}
+          {{ field(class=('form-control' if field.type != 'FileField' else 'form-control') + (' is-invalid' if field.errors else '')) }}
+          {% for e in field.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        {{ form.submit(class='btn btn-primary') }}
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

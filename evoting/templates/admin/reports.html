@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_bp.dashboard') }}" class="btn btn-outline-secondary btn-sm mb-3">
+  <i class="bi bi-arrow-left"></i> Back
+</a>
+<h3 class="mb-4">Election Reports</h3>
+{% for item in data %}
+{% set e = item.election %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between">
+    <strong>{{ e.title }}</strong>
+    <span class="badge {{ 'bg-success' if e.status == 'open' else ('bg-warning text-dark' if e.status == 'upcoming' else 'bg-secondary') }}">
+      {{ e.status.capitalize() }}
+    </span>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">Total votes: <strong>{{ item.total }}</strong></p>
+    {% for c in item.candidates %}
+    {% set pct = ((c.vote_count / item.total * 100) | round(1)) if item.total > 0 else 0 %}
+    <div class="mb-2">
+      <div class="d-flex justify-content-between small mb-1">
+        <span>{{ c.name }}</span>
+        <span>{{ c.vote_count }} ({{ pct }}%)</span>
+      </div>
+      <div class="progress" style="height:12px">
+        <div class="progress-bar" style="width:{{ pct }}%"></div>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No candidates.</p>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">No elections to report on.</div>
+{% endfor %}
+{% endblock %}
